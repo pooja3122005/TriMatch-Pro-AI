@@ -1,166 +1,176 @@
 # TriMatch Pro AI
 
-Clinical Trial Matching & Research Assistant. Matches patients to clinical
-trials by parsing trial eligibility criteria into structured rules and
-evaluating them against patient records.
+**Enterprise Clinical Trial Matching, AI Protocol Parsing & Patient Enrollment Platform**
 
-## Requirements
+Matches patients to clinical research studies by decomposing complex trial eligibility criteria into deterministic, mathematical rules and evaluating them against patient electronic health records (EHR) and laboratory datasets with 100% verifiable source data citations.
 
-- Python 3.10+
-- A Gemini API key (free tier) from [Google AI Studio](https://aistudio.google.com/apikey)
-- A Supabase project (URL + anon key from Project Settings -> API), with
-  `migrations/migration_trial_layer.sql` applied via the Supabase SQL editor
+---
 
-## Setup
+## 📁 Professional Repository Architecture
+
+```
+TriMatch-Pro-AI/
+├── backend/                       # Python FastAPI Backend Architecture
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                # FastAPI app, CORS middleware & router mounts
+│   │   ├── core/                  # Core configurations & logging
+│   │   │   ├── config.py
+│   │   │   └── logging.py
+│   │   ├── db/                    # Supabase client with retry transport
+│   │   │   └── client.py
+│   │   ├── models/                # Pydantic validation schemas
+│   │   │   └── schemas.py
+│   │   ├── routers/               # Clean modular API routers
+│   │   │   ├── audit.py           # /audit-log, /flagged-for-review
+│   │   │   ├── enrollment.py      # /trials/{id}/patients/{id}/(invite|consent|enroll|withdraw)
+│   │   │   ├── matching.py        # /trials/{id}/db-candidates, /match, /lab-results/{id}
+│   │   │   ├── patients.py        # /patients/*, /upload-lab, /upload-document
+│   │   │   ├── progress.py        # /trials/{id}/progress, compute-metrics
+│   │   │   └── trials.py          # /trials/{id}, /import, /parse-criteria, /upload-document
+│   │   └── services/              # Domain business logic & external integrations
+│   │       ├── audit_service.py
+│   │       ├── coarse_filter_service.py
+│   │       ├── db_matching_service.py
+│   │       ├── document_upload_service.py
+│   │       ├── enrollment_service.py
+│   │       ├── lab_upload_service.py
+│   │       ├── llm_service.py     # Google Gemini AI extraction & parsing
+│   │       ├── matching_service.py
+│   │       ├── patient_service.py
+│   │       ├── patient_signup_service.py
+│   │       ├── progress_service.py
+│   │       ├── trial_service.py   # ClinicalTrials.gov API client
+│   │       └── trial_upload_service.py
+│   ├── data/                      # Synthetic demo datasets (patients.json)
+│   ├── migrations/                # Supabase PostgreSQL schema migrations
+│   ├── scripts/                   # Database seeding and migration utilities
+│   ├── .env.example               # Backend environment template
+│   ├── requirements.txt           # Python dependencies
+│   └── run.py                     # Convenience backend runner
+│
+├── frontend/                      # Modern React JS Frontend (Vite + Vanilla CSS)
+│   ├── public/                    # Static public assets & icons
+│   ├── src/
+│   │   ├── api/                   # Unified API client service layer
+│   │   │   └── client.js
+│   │   ├── components/            # Reusable UI components
+│   │   │   ├── Header.jsx         # Global nav with theme toggle & active badge
+│   │   │   ├── Footer.jsx
+│   │   │   ├── Modal.jsx          # Accessible dialog modals
+│   │   │   └── CandidateDrawer.jsx# Drill-down evaluation & Source Data Verification (SDV)
+│   │   ├── context/               # Global state contexts
+│   │   │   ├── AuthContext.jsx    # Session role management (Researcher/Patient)
+│   │   │   └── ToastContext.jsx   # Animated notification toasts
+│   │   ├── pages/                 # Full feature portal views
+│   │   │   ├── LandingPage.jsx    # Hero, quick study launcher with presets
+│   │   │   ├── ResearcherPortal.jsx # Protocol parser, 1000-patient matcher, audit stream
+│   │   │   ├── PatientPortal.jsx  # Participant dashboard & active study timeline
+│   │   │   ├── ConsentWorkflow.jsx# 4-step guided informed consent wizard
+│   │   │   ├── LabUploadPage.jsx  # Unstructured lab text & PDF/photo AI parser
+│   │   │   ├── DocumentUploadPage.jsx # Medical record & imaging scan vault
+│   │   │   ├── PatientAuth.jsx    # Self-registration intake & sign-in
+│   │   │   └── SandboxDemo.jsx    # Phase 1 in-memory sandbox tester
+│   │   ├── App.jsx                # Main application coordinator & routing
+│   │   ├── index.css              # Custom Vanilla CSS design system
+│   │   └── main.jsx               # React DOM entry point
+│   ├── index.html                 # HTML shell with Google Fonts
+│   ├── package.json               # Frontend dependencies & build scripts
+│   └── vite.config.js             # Vite configuration with API proxy
+│
+├── package.json                   # Root monorepo script runner
+├── main.py                        # Root FastAPI server proxy
+├── .gitignore
+└── README.md
+```
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- **Python 3.10+**
+- **Node.js v18+ & npm**
+- **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com/apikey))
+- **Supabase Project** (Database URL + Anon Key)
+
+---
+
+### 1. Backend Setup
 
 ```powershell
+# Create & activate virtual environment
 py -m venv venv
 .\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+
+# Install backend dependencies
+pip install -r backend/requirements.txt
+
+# Configure environment variables
+copy backend\.env.example backend\.env
 ```
 
-Copy `.env.example` to `.env` and fill in your values (`GEMINI_API_KEY`,
-`DATABASE_URL` -- the Supabase project URL, not a `postgresql://` string --
-and `SUPABASE_ANON_KEY`):
+Ensure `backend/.env` contains your `GEMINI_API_KEY`, `DATABASE_URL`, and `SUPABASE_ANON_KEY`.
+
+---
+
+### 2. Frontend Setup
 
 ```powershell
-copy .env.example .env
+cd frontend
+npm install
+npm run build
+cd ..
 ```
 
-## Run
+---
 
+### 3. Running the Application
+
+#### Option A: Production Mode (FastAPI serves built React SPA)
 ```powershell
+# From project root:
 uvicorn main:app --reload
+
+# Or directly from backend folder:
+cd backend
+python run.py
 ```
+Open **`http://127.0.0.1:8000/`** in your browser.
 
-The API will be available at `http://127.0.0.1:8000`, and the dashboard at
-`http://127.0.0.1:8000/`.
+#### Option B: Full-Stack Development Mode (Vite Hot-Reload + FastAPI)
+```powershell
+# Terminal 1 - Backend API:
+uvicorn main:app --reload
 
-## Database
+# Terminal 2 - React Frontend (Vite with API proxy):
+npm run dev
+```
+Open **`http://localhost:5173/`** with instant Hot-Module Replacement.
 
-`migrations/migration_trial_layer.sql` adds the trial/enrollment/compliance
-layer (`trials`, `trial_criteria`, `patient_trial`, `match_results`,
-`trial_metrics`, `audit_log`) on top of an existing Supabase schema that
-already has 1000 synthetic `patients`, their `lab_results`, and `diagnoses`.
-Paste it into the Supabase SQL editor to apply (idempotent, safe to re-run).
-`db.py` holds the shared Supabase client (`SUPABASE_ANON_KEY`, so requests
-are subject to whatever RLS policies are configured on each table). See
-`PLAN.md` for how each table maps to the project's compliance/matching
-requirements, and what's built so far vs. still open.
+---
 
-## Dashboards
+## 🔬 Core Capabilities & Portals
 
-- `http://127.0.0.1:8000/` (`static/index.html`) — landing page with two
-  entry points: Researcher Portal and Patient Portal. Presentation/routing
-  framing only (no real authentication) — a sign-in screen accepts any
-  name and stores it in `sessionStorage` for the header badge, then routes
-  into the existing dashboard/consent pages below.
-- `http://127.0.0.1:8000/phase1-dashboard.html` — Phase 1 fallback demo,
-  in-memory 5-patient store (this used to be at `/` — moved here when the
-  landing page took over that URL, content unchanged). Enter an NCT id
-  (e.g. `NCT04280705`) and click "Load candidates".
-- `http://127.0.0.1:8000/researcher.html` — Phase 2 researcher dashboard,
-  live against the real Supabase data (1000 patients). Enter an NCT id and
-  click "Load trial"; click a ranked candidate to see its full per-criterion
-  breakdown, including the source `lab_result` citation behind every
-  lab-based verdict. The Candidates and Enrollment tabs default to
-  matching 30 patients per load, entered in the "Patients" field next to
-  the NCT id (1-1000) — a smaller number loads faster, a larger one gives
-  a fuller sweep (see `PLAN.md` step 5 for why the coarse filter alone
-  doesn't bound load time).
+1. **Researcher Hub (`#researcher`)**:
+   - Fetch live studies from ClinicalTrials.gov (e.g. `NCT04280705`, `NCT04843709`, `NCT04551755`) or upload custom protocol documents.
+   - Decompose unstructured text into structured criteria with Google Gemini AI.
+   - Match candidate cohorts (10 to 1,000 patients) with real-time pass/fail/unknown breakdowns.
+   - Candidate inspection drawer with **Source Data Verification (SDV)** citing exact database lab records.
+   - Recruitment state machine (Invite $\rightarrow$ Consent $\rightarrow$ Enroll $\rightarrow$ Withdraw) and live immutable 21 CFR Part 11 audit log stream.
+   - Baseline-to-latest lab trajectory delta comparison and success rate metrics.
 
-  The **Trial progress** tab shows enrolled/active/
-  dropout counts, a transparently-defined `success_rate`, and a
-  baseline-vs-latest lab readout per enrolled patient with source
-  citations — currently only populated for `NCT04280705` (see
-  `scripts/seed_enrollment.py`; run it against another trial's NCT id to
-  demo progress there too). The **Enrollment** tab is the real invite ->
-  consent -> enroll pipeline: each ranked candidate shows its current
-  status and the one next action available, plus the trial's audit trail
-  rendered live on the same screen. For an invited patient, "Open consent
-  screen" opens `/consent.html?patient=...&trial=...` in a new tab — the
-  standalone patient-facing screen (Accept/Decline, step indicator,
-  withdraw, own progress once enrolled).
-- `http://127.0.0.1:8000/patient-home.html` — patient portal home
-  (reached via the landing page's Patient Portal sign-in). Looks up every
-  `patient_trial` row for the signed-in patient ID across all trials and
-  links each one into the same `/consent.html` screen above.
+2. **Patient & Participant Portal (`#patient-portal`)**:
+   - Participant dashboard with active study invitations and status tracking.
+   - 4-step guided **Informed Consent Workflow (`#consent`)** with plain-language terms, risk/benefit disclosures, digital electronic signatures, and personal recovery milestones.
+   - **AI Lab Report Ingestion (`#upload-lab`)**: Paste unstructured EHR lab reports or upload diagnostic PDFs/photos for instant automated structured extraction into `lab_results`.
+   - **Supporting Records Vault (`#upload-doc`)**: Medical reports, imaging scans, and referral document filing.
+   - **Phase 1 Sandbox (`#sandbox`)**: In-memory test harness evaluating 5 synthetic patients without database dependencies.
 
-## Endpoints
+---
 
-- `GET /health` — returns `{"status": "ok"}`
-- `GET /trials/{nct_id}` — fetches a trial from ClinicalTrials.gov (title,
-  phase, status, primary endpoint, raw eligibility criteria)
-- `POST /trials/{nct_id}/import` — fetches a trial from ClinicalTrials.gov
-  and upserts it into the Supabase `trials` table (`nct_id`, `title`,
-  `phase`, `status`, `primary_endpoint`); returns the raw eligibility text
-  in the response so you can see what's about to be parsed
-- `POST /trials/{nct_id}/parse-criteria` — parses the trial's eligibility
-  text with the same Gemini parser as `/parse-criteria` below, and replaces
-  (delete-then-insert) that trial's `trial_criteria` rows in Supabase. A
-  criterion can decompose into multiple AND'ed sub-rules (e.g. "Male or
-  non-pregnant female >= 18" yields a real, evaluated `age >= 18` rule
-  while the unstructurable sex/pregnancy part stays honestly flagged
-  instead of being thrown away) -- see `PLAN.md`'s "Compound-criteria
-  decomposition" entry for the full design
-- `POST /trials/{nct_id}/match/{patient_id}` — deterministically matches
-  one real Supabase patient against the trial's parsed criteria, writes
-  `match_results` (citing the exact `lab_results` row behind any lab-based
-  verdict), and returns the same shape as `/match` below
-- `GET /trials/{nct_id}/db-candidates` — coarse-filters the 1000-patient
-  pool via indexed SQL (age range, required diagnosis) where possible, then
-  fully matches and ranks the survivors. Query params: `limit` (returned
-  list size, default 50), `max_evaluate` (cap on how many survivors get
-  fully matched, default 200)
-- `GET /trials/{nct_id}/progress` — for every patient enrolled
-  (`patient_trial.status` in `enrolled`/`withdrawn`) in the trial, computes
-  baseline (nearest lab reading on/before `baseline_date`) vs. latest (most
-  recent reading) per test, with both source `lab_result_id`s, a deviation,
-  and a status of `improved`/`worsened`/`indeterminate`/`no_data` (direction
-  is only ever looked up per test, never guessed). Also returns trial-level
-  `enrolled`/`active`/`dropouts`/`success_rate` and which test_code
-  `success_rate` was computed against (`primary_test_code_used`, either
-  passed via `?primary_test_code=` or auto-selected by data coverage —
-  never inferred from the trial's free-text primary endpoint). Always
-  computed live. Optional query param: `primary_test_code`.
-- `POST /trials/{nct_id}/compute-metrics` — same computation as `/progress`,
-  additionally upserts the headline (enrolled/active/dropouts/success_rate)
-  into the `trial_metrics` table.
-- `POST /trials/{nct_id}/patients/{patient_id}/invite` — creates a
-  `patient_trial` row at `status='invited'`. 409s if one already exists.
-- `POST /trials/{nct_id}/patients/{patient_id}/consent` — only from
-  `invited`; records terms-shown-then-accepted-then-consented as two
-  audit-logged transitions, ending at `status='consented'`. 409s otherwise.
-- `POST /trials/{nct_id}/patients/{patient_id}/enroll` — only from
-  `consented`; sets `status='enrolled'`, `enrolled_at`, and
-  `baseline_date` together (the anchor `/progress` depends on). 409s
-  otherwise.
-- `POST /trials/{nct_id}/patients/{patient_id}/withdraw` — from any active
-  state (`invited`/`accepted`/`consented`/`enrolled`) to `withdrawn`.
-- `POST /trials/{nct_id}/patients/{patient_id}/decline` — from
-  `invited`/`accepted` to `declined`.
-- `GET /trials/{nct_id}/enrollment` — every `patient_trial` row for the
-  trial (current status + timestamps).
-- `GET /trials/{nct_id}/audit` — the `audit_log` rows for the trial
-  (actor/action/entity_id/detail), newest first. Optional `limit`.
-- `GET /patients` — lists synthetic patients
-- `GET /patients/{id}` — fetches one synthetic patient
-- `POST /parse-criteria` — `{"text": "<raw eligibility text>"}`, uses Gemini
-  to extract structured rules; criteria that can't be reduced to a single
-  field/operator/value are flagged `needs_review` instead of guessed
-- `POST /match` — `{"patient_id": "P001", "criteria": [...], "nct_id": "..."}`
-  (criteria from `/parse-criteria`; `nct_id` optional, for the audit trail),
-  deterministically evaluates each criterion against the patient
-  (`pass`/`fail`/`unknown` + source field + reason) and returns an overall
-  verdict of `eligible`, `ineligible`, or `needs more data`. Every criterion
-  decision is logged.
-- `GET /trials/{nct_id}/candidates` — fetches the trial, parses its
-  eligibility criteria once, matches every synthetic patient against them,
-  and returns the parsed criteria plus patients ranked best-candidate-first.
-  Every criterion decision is logged.
-- `GET /audit-log` — every logged match decision (timestamp, trial, patient,
-  criterion, source field, verdict, reason), newest first. Optional query
-  params: `nct_id`, `patient_id`, `limit`.
-- `GET /flagged-for-review` — same as `/audit-log` but restricted to
-  `unknown` verdicts (criteria that couldn't be structured, or where the
-  patient is missing the needed data) — the compliance/human-review queue.
+## 📜 Compliance & Architecture Principles
+
+- **Deterministic Evaluation**: AI is used strictly for extraction and semantic parsing; patient qualification is evaluated through deterministic mathematical and boolean comparison rules.
+- **Source Data Traceability**: Every evaluation links directly to the cited `lab_results` or diagnosis record.
+- **21 CFR Part 11 Audit Trail**: Immutable state transition logging records actor attribution, timestamps, and transition metadata.

@@ -1,9 +1,25 @@
+# Python
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.log
 .env
+.env.local
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.npm
+.vite
+
+# System & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 uvicorn.pid
 uvicorn_out.log
 uvicorn_err.log
-PLAN.md
-frontend example static/

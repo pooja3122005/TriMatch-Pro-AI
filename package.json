@@ -1,0 +1,21 @@
+{
+  "name": "trimatch-pro-ai",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Enterprise Clinical Trial Matching, AI Protocol Parsing & Patient Enrollment Platform",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "start": "uvicorn main:app --reload"
+  },
+  "keywords": [
+    "clinical-trials",
+    "ai-matching",
+    "fastapi",
+    "react",
+    "gemini"
+  ],
+  "author": "TriMatch Pro AI Team",
+  "license": "MIT"
+}
