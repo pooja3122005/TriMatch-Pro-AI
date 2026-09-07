@@ -194,6 +194,7 @@ class ParseCriteriaToDBResponse(BaseModel):
 
 class DBCandidateSummary(BaseModel):
     patient_id: str
+    name: Optional[str] = None
     age: Optional[int] = None
     sex: Optional[str] = None
     overall: Literal["eligible", "ineligible", "needs more data"]
@@ -227,6 +228,7 @@ class TestProgress(BaseModel):
 
 class PatientProgress(BaseModel):
     patient_id: str
+    name: Optional[str] = None
     status: str
     baseline_date: Optional[str] = None
     tests: list[TestProgress]

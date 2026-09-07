@@ -85,20 +85,21 @@ def get_db_candidates(nct_id: str, limit: int = 50, max_evaluate: int = _MAX_EVA
     if to_evaluate:
         demo_rows = (
             client.table("patients")
-            .select("patient_id, age, gender")
+            .select("patient_id, name, age, gender")
             .in_("patient_id", to_evaluate)
             .execute()
             .data
         )
-        demographics = {r["patient_id"]: (r["age"], r["gender"]) for r in demo_rows}
+        demographics = {r["patient_id"]: (r.get("name"), r["age"], r["gender"]) for r in demo_rows}
 
     candidates = []
     for pid in to_evaluate:
         overall, results = match_patient_db(client, pid, nct_id, criteria_rows=criteria_rows)
-        age, sex = demographics.get(pid, (None, None))
+        name, age, sex = demographics.get(pid, (None, None, None))
         candidates.append(
             DBCandidateSummary(
                 patient_id=pid,
+                name=name,
                 age=age,
                 sex=sex,
                 overall=overall,

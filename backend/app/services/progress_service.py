@@ -167,6 +167,19 @@ def compute_trial_progress(client, nct_id: str, primary_test_code: str | None = 
         .data
     )
 
+    # Fetch names for all enrolled patients in one query
+    enrolled_ids = [e["patient_id"] for e in enrollments]
+    name_map: dict[str, str] = {}
+    if enrolled_ids:
+        name_rows = (
+            client.table("patients")
+            .select("patient_id, name")
+            .in_("patient_id", enrolled_ids)
+            .execute()
+            .data
+        )
+        name_map = {r["patient_id"]: r.get("name") for r in name_rows}
+
     patients = []
     all_tests = []
     for e in enrollments:
@@ -175,6 +188,7 @@ def compute_trial_progress(client, nct_id: str, primary_test_code: str | None = 
         patients.append(
             {
                 "patient_id": e["patient_id"],
+                "name": name_map.get(e["patient_id"]),
                 "status": e["status"],
                 "baseline_date": e["baseline_date"],
                 "tests": tests,

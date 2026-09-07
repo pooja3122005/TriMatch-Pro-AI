@@ -870,3 +870,9 @@ a:hover {
   .nav-links { overflow-x: auto; padding-bottom: 0.25rem; }
   .drawer-content { max-width: 100%; }
 }
+
+
+.candidate
+{
+  padding-bottom: 100px !important;
+}

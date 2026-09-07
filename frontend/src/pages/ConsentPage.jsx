@@ -200,9 +200,21 @@ export default function ConsentPage({ navigate, params }) {
 
   const withdraw = async () => {
     try {
-      const res = await fetch(`/trials/${encodeURIComponent(nctId)}/patients/${encodeURIComponent(patientId)}/withdraw`, { method: 'POST' });
+      const res = await fetch(`/trials/${encodeURIComponent(nctId)}/patients/${encodeURIComponent(patientId)}/withdraw?actor=patient`, { method: 'POST' });
       const data = await res.json();
-      if (!res.ok) { setView({ type: 'error', msg: data.detail || 'Could not process your withdrawal. Try again.' }); return; }
+      if (!res.ok) {
+        if (res.status === 409) {
+          // Likely already withdrawn or status changed, reload the state
+          const enrollRes = await fetch(`/trials/${encodeURIComponent(nctId)}/enrollment`);
+          if (enrollRes.ok) {
+            const enrollment = await enrollRes.json();
+            const record = enrollment.find(e => e.patient_id === patientId);
+            if (record) { handleStatus(record.status); return; }
+          }
+        }
+        setView({ type: 'error', msg: data.detail || 'Could not process your withdrawal. Try again.' });
+        return;
+      }
       setView({ type: 'withdrawn' });
     } catch { setView({ type: 'error', msg: 'Could not reach the server. Try again.' }); }
   };
